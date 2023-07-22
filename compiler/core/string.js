@@ -8,6 +8,7 @@ import {
   memberExpression,
   templateLiteral,
   returnStatement,
+  arrayExpression,
 } from "../templates";
 import { binaryTest } from "../utils";
 import op from "../operators";
@@ -19,7 +20,7 @@ const lengthChecks = {
 };
 
 export default function compileStringSchema(schema, ctx) {
-  const body = [varDeclaration(op.LET, ctx.ERRORS, op.ARRAY_EXP)];
+  const body = [varDeclaration(op.LET, ctx.ERRORS, arrayExpression())];
   const vars = [];
   const tests = [];
   const validations = schema.validations;

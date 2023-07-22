@@ -1,5 +1,7 @@
 function varDeclaration(type, identifier, init) {
-  return `${type} ${identifier}=${init}`;
+  let code = `${type} ${identifier}`;
+  if (init) code += `=${init}`;
+  return code;
 }
 
 function varAssignment(left, operator, right) {
@@ -88,6 +90,27 @@ function forStatement(init, test, update, body) {
   return code;
 }
 
+function arrayExpression(elements = []) {
+  let code = "[";
+  for (let i = 0, l = elements.length; i < l; ++i) {
+    if (i > 0) code += ",";
+    code += elements[i];
+  }
+  code += "]";
+  return code;
+}
+
+function objectExpression(properties = []) {
+  let code = "{";
+  for (let i = 0, l = properties.length; i < l; ++i) {
+    if (i > 0) code += ",";
+    const prop = properties[i];
+    code += `${prop.key}:${prop.value}`;
+  }
+  code += "}";
+  return code;
+}
+
 export {
   varDeclaration,
   varAssignment,
@@ -102,4 +125,6 @@ export {
   templateLiteral,
   returnStatement,
   forStatement,
+  arrayExpression,
+  objectExpression,
 };
