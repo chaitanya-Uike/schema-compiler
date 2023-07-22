@@ -104,11 +104,14 @@ function objectExpression(properties = []) {
   let code = "{";
   for (let i = 0, l = properties.length; i < l; ++i) {
     if (i > 0) code += ",";
-    const prop = properties[i];
-    code += `${prop.key}:${prop.value}`;
+    code += properties[i];
   }
   code += "}";
   return code;
+}
+
+function objectProperty(key, value) {
+  return `${key}:${value}`;
 }
 
 export {
@@ -127,4 +130,5 @@ export {
   forStatement,
   arrayExpression,
   objectExpression,
+  objectProperty,
 };

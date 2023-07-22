@@ -9,8 +9,9 @@ const stringSchema = {
       message: "min length is 3",
     },
     {
-      name: "isNum",
-      value: true,
+      name: "match",
+      value: "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/",
+      message: "invalid email",
     },
   ],
 };

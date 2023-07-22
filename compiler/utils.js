@@ -3,13 +3,30 @@ import {
   binaryExpression,
   callExpression,
   memberExpression,
-  stringLiteral,
+  objectExpression,
+  objectProperty,
 } from "./templates";
 
-export function binaryTest(left, operator, right, message, ctx) {
+export function binaryTest(
+  left,
+  operator,
+  right,
+  message,
+  value,
+  instancePath = "",
+  ctx
+) {
   return ifStatement(binaryExpression(left, operator, right), [
-    callExpression(memberExpression(ctx.ERRORS, "push"), [
-      stringLiteral(message),
+    pushErrorExpression(value, message, instancePath, ctx),
+  ]);
+}
+
+export function pushErrorExpression(value, message, instancePath = "", ctx) {
+  return callExpression(memberExpression(ctx.ERRORS, "push"), [
+    objectExpression([
+      objectProperty("value", value),
+      objectProperty("message", message),
+      objectProperty("instancePath", instancePath),
     ]),
   ]);
 }
