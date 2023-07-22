@@ -1,5 +1,6 @@
 import {
   varDeclaration,
+  varDeclarator,
   unaryExpression,
   binaryExpression,
   stringLiteral,
@@ -20,8 +21,8 @@ const lengthChecks = {
 };
 
 export default function compileStringSchema(schema, path, ctx) {
-  const body = [varDeclaration(op.LET, ctx.ERRORS, arrayExpression())];
-  const vars = [];
+  const body = [];
+  const declarations = [varDeclarator(ctx.ERRORS, arrayExpression())];
   const tests = [];
   const validations = schema.validations;
   let validation,
@@ -34,7 +35,7 @@ export default function compileStringSchema(schema, path, ctx) {
 
   function addRegexTest(regex, message) {
     const pattern = `${ctx.PATTERN}${patternVarCount++}`;
-    vars.push(varDeclaration(op.LET, pattern, regex));
+    declarations.push(varDeclarator(pattern, regex));
     tests.push(
       ifStatement(
         unaryExpression(
@@ -56,11 +57,9 @@ export default function compileStringSchema(schema, path, ctx) {
     if (lengthCheck) {
       if (!lengthAsg) {
         tests.push(
-          varDeclaration(
-            op.LET,
-            ctx.LENGTH,
-            memberExpression(ctx.DATA, "length")
-          )
+          varDeclaration(op.LET, [
+            varDeclarator(ctx.LENGTH, memberExpression(ctx.DATA, "length")),
+          ])
         );
         lengthAsg = true;
       }
@@ -118,7 +117,7 @@ export default function compileStringSchema(schema, path, ctx) {
       );
     }
   }
-  body.push(...vars);
+  body.push(varDeclaration(op.LET, declarations));
   body.push(
     ifStatement(
       binaryExpression(

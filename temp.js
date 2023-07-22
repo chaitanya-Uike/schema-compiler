@@ -1,29 +1,68 @@
-const arraySchema = {
-  type: "array",
-  items: {
-    type: {
-      type: "number",
+const objectSchema = {
+  type: "object",
+  properties: [
+    {
+      type: "string",
+      name: "email",
       validations: [
         {
-          name: "gte",
-          value: 10,
+          name: "match",
+          value: "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/",
+          message: "invalid email",
         },
       ],
+      required: true,
     },
-  },
-  validations: [{ name: "min", value: 2 }],
+    {
+      type: "string",
+      name: "password",
+      validations: [
+        {
+          name: "min",
+          value: "3",
+        },
+        {
+          name: "max",
+          value: "16",
+        },
+        {
+          name: "match",
+          value:
+            "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+          message:
+            "Password should have at least one uppercase letter, one lowercase letter, one number and one special character",
+        },
+      ],
+      required: true,
+    },
+  ],
 };
 
-function validateArray(d) {
+function v(d) {
   let e = [];
-  if (!Array.isArray(d)) e.push(`expected type "array" recieved "${typeof d}"`);
-  let l = d.length;
-  for (let i = 0; i < l; ++i) {
-    let v = d[i];
-    if (typeof v !== "number")
-      e.push(`expected type "number" recieved "${typeof d}"`);
-    else if (v < 10) e.push("value should be greater than equal to 10");
+  let p1 = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  let p2 = /^[a-zA-Z]*$/;
+  if (typeof d !== "string")
+    e.push({
+      message: `expected type "string" recieved "${typeof d}"`,
+      path: "/",
+    });
+  else {
+    let l = d.length;
+    if (l < 3) e.push({ message: "min length is 3", path: "/" });
+    if (!p1.test(d)) e.push({ message: "invalid email", path: "/" });
+    if (!p2.test(d))
+      e.push({ message: "value should only contain alphabets", path: "/" });
+    if (d !== "test@email.com")
+      e.push({ message: "value not equal to 'test@email.com'", path: "/" });
+    if (!(d === "hello" || d === "world"))
+      e.push({ message: "value should be one of [hello, world]", path: "/" });
   }
-  if (l < 2) e.push("array length should be greater than 2");
   return e;
+}
+
+function validate(d) {
+  let e = [];
+  let p1 = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;
+  let p;
 }

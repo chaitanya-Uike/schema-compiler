@@ -1,6 +1,15 @@
-function varDeclaration(type, identifier, init) {
-  let code = `${type} ${identifier}`;
+function varDeclarator(identifier, init) {
+  let code = identifier;
   if (init) code += `=${init}`;
+  return code;
+}
+
+function varDeclaration(kind, declarations) {
+  let code = `${kind} `;
+  for (let i = 0, l = declarations.length; i < l; ++i) {
+    if (i > 0) code += ",";
+    code += declarations[i];
+  }
   return code;
 }
 
@@ -115,6 +124,7 @@ function objectProperty(key, value) {
 }
 
 export {
+  varDeclarator,
   varDeclaration,
   varAssignment,
   unaryExpression,

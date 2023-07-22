@@ -21,10 +21,20 @@ const stringSchema = {
       name: "const",
       value: "test@email.com",
     },
+    {
+      name: "enum",
+      value: ["hello", "world"],
+    },
   ],
 };
 
+console.time("compile");
 const code = compile(stringSchema);
+console.timeEnd("compile");
+
 const validator = new Function("d", code);
 console.log(code);
-console.log(validator("he"));
+
+console.time("validate");
+validator("he");
+console.timeEnd("validate");
