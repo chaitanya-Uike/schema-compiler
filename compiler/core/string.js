@@ -10,7 +10,7 @@ import {
   returnStatement,
   arrayExpression,
 } from "../templates";
-import { binaryTest } from "../utils";
+import { binaryTest, pushErrorExpression } from "../utils";
 import op from "../operators";
 
 const lengthChecks = {
@@ -19,7 +19,7 @@ const lengthChecks = {
   length: { op: op.NOT_EQUAL, msg: "length should be " },
 };
 
-export default function compileStringSchema(schema, ctx) {
+export default function compileStringSchema(schema, path, ctx) {
   const body = [varDeclaration(op.LET, ctx.ERRORS, arrayExpression())];
   const vars = [];
   const tests = [];
@@ -30,7 +30,7 @@ export default function compileStringSchema(schema, ctx) {
     message,
     lengthAsg = false,
     patternVarCount = 1,
-    v;
+    errorMsg;
 
   function addRegexTest(regex, message) {
     const pattern = `${ctx.PATTERN}${patternVarCount++}`;
@@ -41,11 +41,7 @@ export default function compileStringSchema(schema, ctx) {
           op.NOT,
           callExpression(memberExpression(pattern, "test"), [ctx.DATA])
         ),
-        [
-          callExpression(memberExpression(ctx.ERRORS, "push"), [
-            stringLiteral(message),
-          ]),
-        ]
+        [pushErrorExpression(stringLiteral(message), path, ctx)]
       )
     );
   }
@@ -68,15 +64,12 @@ export default function compileStringSchema(schema, ctx) {
         );
         lengthAsg = true;
       }
-      v = parseInt(value);
+      value = parseInt(value);
+      errorMsg = message
+        ? stringLiteral(message)
+        : stringLiteral(lengthCheck.msg + value);
       tests.push(
-        binaryTest(
-          ctx.LENGTH,
-          lengthCheck.op,
-          v,
-          message || lengthCheck.msg + v,
-          ctx
-        )
+        binaryTest(ctx.LENGTH, lengthCheck.op, value, errorMsg, path, ctx)
       );
     } else if (name === "match") {
       addRegexTest(reviveRegex(value), message || "value not matching regex");
@@ -91,22 +84,25 @@ export default function compileStringSchema(schema, ctx) {
         message || "value should only contain alphaNumeric characters"
       );
     } else if (name === "isNum" && value) {
+      errorMsg = message
+        ? stringLiteral(message)
+        : stringLiteral("value should only contain numeric characters");
       tests.push(
         ifStatement(`isNaN(parseFloat(${ctx.DATA}))||!isFinite(${ctx.DATA})`, [
-          callExpression(memberExpression(ctx.ERRORS, "push"), [
-            stringLiteral(
-              message || "value should only contain numeric characters"
-            ),
-          ]),
+          pushErrorExpression(errorMsg, path, ctx),
         ])
       );
     } else if (name === "const") {
+      errorMsg = message
+        ? stringLiteral(message)
+        : templateLiteral(`value not equal to '${value}'`);
       tests.push(
         binaryTest(
           ctx.DATA,
           op.NOT_EQUAL,
           stringLiteral(value),
-          message || `value not equal to '${value}'`,
+          errorMsg,
+          path,
           ctx
         )
       );
@@ -122,18 +118,18 @@ export default function compileStringSchema(schema, ctx) {
         );
       }
       argument += ")";
+      errorMsg = message
+        ? stringLiteral(message)
+        : templateLiteral(`value should be one of [${value.join(", ")}]`);
       tests.push(
         ifStatement(unaryExpression(op.NOT, argument), [
-          callExpression(memberExpression(ctx.ERRORS, "push"), [
-            templateLiteral(
-              message || `value should be one of [${value.join(", ")}]`
-            ),
-          ]),
+          pushErrorExpression(errorMsg, path, ctx),
         ])
       );
     }
   }
   body.push(...vars);
+  errorMsg = templateLiteral('expected type "string" recieved "${typeof d}"');
   body.push(
     ifStatement(
       binaryExpression(
@@ -141,11 +137,7 @@ export default function compileStringSchema(schema, ctx) {
         op.NOT_EQUAL,
         stringLiteral("string")
       ),
-      [
-        callExpression(memberExpression(ctx.ERRORS, "push"), [
-          templateLiteral('expected type "string" recieved "${typeof d}"'),
-        ]),
-      ],
+      [pushErrorExpression(errorMsg, path, ctx)],
       tests
     )
   );

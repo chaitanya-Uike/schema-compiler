@@ -5,28 +5,20 @@ import {
   memberExpression,
   objectExpression,
   objectProperty,
+  stringLiteral,
 } from "./templates";
 
-export function binaryTest(
-  left,
-  operator,
-  right,
-  message,
-  value,
-  instancePath = "",
-  ctx
-) {
+export function binaryTest(left, operator, right, message, path, ctx) {
   return ifStatement(binaryExpression(left, operator, right), [
-    pushErrorExpression(value, message, instancePath, ctx),
+    pushErrorExpression(message, path, ctx),
   ]);
 }
 
-export function pushErrorExpression(value, message, instancePath = "", ctx) {
+export function pushErrorExpression(message, path, ctx) {
   return callExpression(memberExpression(ctx.ERRORS, "push"), [
     objectExpression([
-      objectProperty("value", value),
       objectProperty("message", message),
-      objectProperty("instancePath", instancePath),
+      objectProperty("path", stringLiteral(path)),
     ]),
   ]);
 }

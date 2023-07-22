@@ -9,7 +9,7 @@ const ctx = {
 
 export default function compile(schema) {
   let body;
-  if (schema.type === "string") body = compileStringSchema(schema, ctx);
+  if (schema.type === "string") body = compileStringSchema(schema, "/", ctx);
   return generateOutput(body);
 }
 
