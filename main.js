@@ -6,10 +6,11 @@ const stringSchema = {
     {
       name: "min",
       value: "3",
+      message: "min length is 3",
     },
     {
-      name: "enum",
-      value: ["hello", "world", "this"],
+      name: "isNum",
+      value: true,
     },
   ],
 };

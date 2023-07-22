@@ -13,8 +13,3 @@ export function binaryTest(left, operator, right, message, ctx) {
     ]),
   ]);
 }
-
-export function reviveRegex(regexString) {
-  const m = regexString.match(/\/(.*)\/(.*)?/);
-  return new RegExp(m[1], m[2] || "");
-}

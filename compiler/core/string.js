@@ -9,7 +9,7 @@ import {
   templateLiteral,
   returnStatement,
 } from "../templates";
-import { binaryTest, reviveRegex } from "../utils";
+import { binaryTest } from "../utils";
 import op from "../operators";
 
 const lengthChecks = {
@@ -26,6 +26,7 @@ export default function compileStringSchema(schema, ctx) {
   let validation,
     name,
     value,
+    message,
     lengthAsg = false,
     patternVarCount = 1,
     v;
@@ -52,6 +53,7 @@ export default function compileStringSchema(schema, ctx) {
     validation = validations[i];
     name = validation.name;
     value = validation.value;
+    message = validation.message;
 
     const lengthCheck = lengthChecks[name];
     if (lengthCheck) {
@@ -67,27 +69,35 @@ export default function compileStringSchema(schema, ctx) {
       }
       v = parseInt(value);
       tests.push(
-        binaryTest(ctx.LENGTH, lengthCheck.op, v, lengthCheck.msg + v, ctx)
+        binaryTest(
+          ctx.LENGTH,
+          lengthCheck.op,
+          v,
+          message || lengthCheck.msg + v,
+          ctx
+        )
       );
     } else if (name === "match") {
-      addRegexTest(reviveRegex(value), "value not matching regex");
+      addRegexTest(reviveRegex(value), message || "value not matching regex");
     } else if (name === "isAlpha" && value) {
-      addRegexTest(/^[a-zA-Z]*$/, "value should only contain alphabets");
+      addRegexTest(
+        /^[a-zA-Z]*$/,
+        message || "value should only contain alphabets"
+      );
     } else if (name === "isAlNum" && value) {
       addRegexTest(
         /^[a-z0-9]+$/,
-        "value should only contain alphaNumeric characters"
+        message || "value should only contain alphaNumeric characters"
       );
     } else if (name === "isNum" && value) {
       tests.push(
-        ifStatement(
-          `isNaN(parseFloat(${ctx.DATA})) || !isFinite(${ctx.DATA})`,
-          [
-            callExpression(memberExpression(ctx.ERRORS, "push"), [
-              stringLiteral("value should only contain numeric characters"),
-            ]),
-          ]
-        )
+        ifStatement(`isNaN(parseFloat(${ctx.DATA}))||!isFinite(${ctx.DATA})`, [
+          callExpression(memberExpression(ctx.ERRORS, "push"), [
+            stringLiteral(
+              message || "value should only contain numeric characters"
+            ),
+          ]),
+        ])
       );
     } else if (name === "const") {
       tests.push(
@@ -95,7 +105,7 @@ export default function compileStringSchema(schema, ctx) {
           ctx.DATA,
           op.NOT_EQUAL,
           stringLiteral(value),
-          `value not equal to '${value}'`,
+          message || `value not equal to '${value}'`,
           ctx
         )
       );
@@ -114,7 +124,9 @@ export default function compileStringSchema(schema, ctx) {
       tests.push(
         ifStatement(unaryExpression(op.NOT, argument), [
           callExpression(memberExpression(ctx.ERRORS, "push"), [
-            templateLiteral(`value should be one of [${value.join(", ")}]`),
+            templateLiteral(
+              message || `value should be one of [${value.join(", ")}]`
+            ),
           ]),
         ])
       );
@@ -138,4 +150,9 @@ export default function compileStringSchema(schema, ctx) {
   );
   body.push(returnStatement(ctx.ERRORS));
   return body;
+}
+
+function reviveRegex(regexString) {
+  const m = regexString.match(/\/(.*)\/(.*)?/);
+  return new RegExp(m[1], m[2] || "");
 }
