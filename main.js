@@ -17,6 +17,10 @@ const stringSchema = {
       name: "isAlpha",
       value: true,
     },
+    {
+      name: "const",
+      value: "test@email.com",
+    },
   ],
 };
 

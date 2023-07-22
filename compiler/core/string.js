@@ -10,7 +10,7 @@ import {
   returnStatement,
   arrayExpression,
 } from "../templates";
-import { binaryTest, pushErrorExpression } from "../utils";
+import { pushErrorExpression } from "../utils";
 import op from "../operators";
 
 const lengthChecks = {
@@ -65,11 +65,11 @@ export default function compileStringSchema(schema, path, ctx) {
         lengthAsg = true;
       }
       value = parseInt(value);
-      errorMsg = message
-        ? stringLiteral(message)
-        : stringLiteral(lengthCheck.msg + value);
+      errorMsg = message || lengthCheck.msg + value;
       tests.push(
-        binaryTest(ctx.LENGTH, lengthCheck.op, value, errorMsg, path, ctx)
+        ifStatement(binaryExpression(ctx.LENGTH, lengthCheck.op, value), [
+          pushErrorExpression(stringLiteral(errorMsg), path, ctx),
+        ])
       );
     } else if (name === "match") {
       addRegexTest(reviveRegex(value), message || "value not matching regex");
@@ -84,26 +84,18 @@ export default function compileStringSchema(schema, path, ctx) {
         message || "value should only contain alphaNumeric characters"
       );
     } else if (name === "isNum" && value) {
-      errorMsg = message
-        ? stringLiteral(message)
-        : stringLiteral("value should only contain numeric characters");
+      errorMsg = message || "value should only contain numeric characters";
       tests.push(
         ifStatement(`isNaN(parseFloat(${ctx.DATA}))||!isFinite(${ctx.DATA})`, [
-          pushErrorExpression(errorMsg, path, ctx),
+          pushErrorExpression(stringLiteral(errorMsg), path, ctx),
         ])
       );
     } else if (name === "const") {
-      errorMsg = message
-        ? stringLiteral(message)
-        : templateLiteral(`value not equal to '${value}'`);
+      errorMsg = message || `value not equal to '${value}'`;
       tests.push(
-        binaryTest(
-          ctx.DATA,
-          op.NOT_EQUAL,
-          stringLiteral(value),
-          errorMsg,
-          path,
-          ctx
+        ifStatement(
+          binaryExpression(ctx.DATA, op.NOT_EQUAL, stringLiteral(value)),
+          [pushErrorExpression(stringLiteral(errorMsg), path, ctx)]
         )
       );
     } else if (name === "enum") {
@@ -118,18 +110,15 @@ export default function compileStringSchema(schema, path, ctx) {
         );
       }
       argument += ")";
-      errorMsg = message
-        ? stringLiteral(message)
-        : templateLiteral(`value should be one of [${value.join(", ")}]`);
+      errorMsg = message || `value should be one of [${value.join(", ")}]`;
       tests.push(
         ifStatement(unaryExpression(op.NOT, argument), [
-          pushErrorExpression(errorMsg, path, ctx),
+          pushErrorExpression(stringLiteral(errorMsg), path, ctx),
         ])
       );
     }
   }
   body.push(...vars);
-  errorMsg = templateLiteral('expected type "string" recieved "${typeof d}"');
   body.push(
     ifStatement(
       binaryExpression(
@@ -137,7 +126,13 @@ export default function compileStringSchema(schema, path, ctx) {
         op.NOT_EQUAL,
         stringLiteral("string")
       ),
-      [pushErrorExpression(errorMsg, path, ctx)],
+      [
+        pushErrorExpression(
+          templateLiteral('expected type "string" recieved "${typeof d}"'),
+          path,
+          ctx
+        ),
+      ],
       tests
     )
   );
