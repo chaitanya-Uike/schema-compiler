@@ -33,15 +33,16 @@ const objectSchema = {
             "Password should have at least one uppercase letter, one lowercase letter, one number and one special character",
         },
       ],
-      required: true,
     },
   ],
 };
 
 function v(d) {
-  let e = [];
-  let p1 = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  let p2 = /^[a-zA-Z]*$/;
+  //----handled by root
+  let e = [],
+    p1 = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    p2 = /^[a-zA-Z]*$/;
+  // ----handled by string schema compiler
   if (typeof d !== "string")
     e.push({
       message: `expected type "string" recieved "${typeof d}"`,
@@ -58,11 +59,59 @@ function v(d) {
     if (!(d === "hello" || d === "world"))
       e.push({ message: "value should be one of [hello, world]", path: "/" });
   }
+  //---- handled by root
   return e;
 }
 
 function validate(d) {
-  let e = [];
-  let p1 = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;
-  let p;
+  //---- handled by root
+  let e = [],
+    p1 = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/,
+    p2 = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  //---- handled by object schema compiler
+  if (d && typeof d == "object" && !Array.isArray(d))
+    e.push({
+      message: `expected type "object" recieved "${typeof d}"`,
+      path: "/",
+    });
+  else {
+    if (d.email === undefined) {
+      e.push({
+        message: "required field 'email' is missing",
+        path: "/email",
+      });
+    } else {
+      let d0 = d.email;
+      // ----handled by string schema compiler
+      if (typeof d0 !== "string")
+        e.push({
+          message: `expected type "string" recieved "${typeof d}"`,
+          path: "/email",
+        });
+      else if (!p1.test(d0))
+        e.push({ message: "invalid email", path: "/email" });
+    }
+    if (d.password !== undefined) {
+      let d1 = d.password;
+      // ----handled by string schema compiler
+      if (typeof d1 !== "string")
+        e.push({
+          message: `expected type "string" recieved "${typeof d}"`,
+          path: "/password",
+        });
+      else {
+        let l = d1.length;
+        if (l < 3) e.push({ message: "min length is 3", path: "/password" });
+        if (l > 16) e.push({ message: "max length is 16", path: "/password" });
+        if (!p2.test(d1))
+          e.push({
+            message:
+              "Password should have at least one uppercase letter, one lowercase letter, one number and one special character",
+            path: "/password",
+          });
+      }
+    }
+  }
+  //----handled by root
+  return e;
 }

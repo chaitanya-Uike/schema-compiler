@@ -38,3 +38,24 @@ console.log(code);
 console.time("validate");
 validator("he");
 console.timeEnd("validate");
+
+import Ajv from "ajv";
+
+const ajv = new Ajv();
+
+const validate = ajv.compile({
+  type: "object",
+  properties: {
+    name: {
+      type: "string",
+      minLength: 3,
+    },
+    password: {
+      type: "string",
+      maxLength: 12,
+    },
+  },
+  required: ["name"],
+});
+
+console.log(validate);
