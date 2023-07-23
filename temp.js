@@ -75,13 +75,14 @@ function validate(d) {
       path: "/",
     });
   else {
+    let d0;
     if (d.email === undefined) {
       e.push({
         message: "required field 'email' is missing",
         path: "/email",
       });
     } else {
-      let d0 = d.email;
+      d0 = d.email;
       // ----handled by string schema compiler
       if (typeof d0 !== "string")
         e.push({
@@ -92,18 +93,18 @@ function validate(d) {
         e.push({ message: "invalid email", path: "/email" });
     }
     if (d.password !== undefined) {
-      let d1 = d.password;
+      d0 = d.password;
       // ----handled by string schema compiler
-      if (typeof d1 !== "string")
+      if (typeof d0 !== "string")
         e.push({
           message: `expected type "string" recieved "${typeof d}"`,
           path: "/password",
         });
       else {
-        let l = d1.length;
+        let l = d0.length;
         if (l < 3) e.push({ message: "min length is 3", path: "/password" });
         if (l > 16) e.push({ message: "max length is 16", path: "/password" });
-        if (!p2.test(d1))
+        if (!p2.test(d0))
           e.push({
             message:
               "Password should have at least one uppercase letter, one lowercase letter, one number and one special character",

@@ -1,24 +1,16 @@
-import compileStringSchema from "./core/string";
-
-const ctx = {
-  DATA: "d",
-  ERRORS: "e",
-  LENGTH: "l",
-  PATTERN: "p",
-};
+import generator from "./generator";
+import State from "./state";
 
 export default function compile(schema) {
-  let body;
-  if (schema.type === "string") body = compileStringSchema(schema, "/", ctx);
-  return generateOutput(body);
-}
+  const state = new State();
 
-function generateOutput(body) {
-  let output = "";
-  for (let i = 0, l = body.length; i < l; ++i) {
-    const statement = body[i];
-    output += statement;
-    if (statement[statement.length - 1] !== ";") output += ";";
-  }
+  state.addGlobal(generator.errorsDec());
+
+  const type = schema.type.replace(" ", "_");
+  generator[type](schema, state, "/");
+
+  let output = generator.globals(state);
+  output += state.output;
+  output += generator.returnStatement();
   return output;
 }
