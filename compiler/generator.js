@@ -6,7 +6,7 @@ const generator = {
   ERRORS: "e",
   LENGTH: "l",
 
-  object: function (schema, ctx, path) {
+  object: function (schema, path, ctx) {
     const level = this.level(path);
     const dataVar = this.id(this.DATA, level);
     const properties = schema.properties;
@@ -29,7 +29,7 @@ const generator = {
           op.ASSIGN,
           t.memberExpression(dataVar, t.stringLiteral(name), true)
         ),
-        this[type](property, ctx, childPath),
+        this[type](property, childPath, ctx),
       ];
 
       if (required) {
@@ -78,7 +78,7 @@ const generator = {
     return this.addSemiColon(output);
   },
 
-  string: function (schema, ctx, path) {
+  string: function (schema, path, ctx) {
     const tests = [];
     const dataVar = this.id(this.DATA, this.level(path));
     const validations = schema.validations;
@@ -207,7 +207,7 @@ const generator = {
     return this.addSemiColon(output);
   },
 
-  number: function (schema, ctx, path) {
+  number: function (schema, path) {
     const tests = [];
     const dataVar = this.id(this.DATA, this.level(path));
     const validations = schema.validations;
@@ -324,7 +324,7 @@ const generator = {
     return this.addSemiColon(output);
   },
 
-  boolean: function (schema, ctx, path) {
+  boolean: function (schema, path) {
     const tests = [];
     const dataVar = this.id(this.DATA, this.level(path));
     const validations = schema.validations;
@@ -358,6 +358,16 @@ const generator = {
         ),
       ],
       tests
+    );
+
+    return this.addSemiColon(output);
+  },
+
+  null: function (schema, path) {
+    const dataVar = this.id(this.DATA, this.level(path));
+    const output = t.ifStatement(
+      t.binaryExpression(dataVar, op.NOT_EQUAL, "null"),
+      [this.pushErrorExpression(t.stringLiteral("expected type 'null'"), path)]
     );
 
     return this.addSemiColon(output);

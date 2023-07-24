@@ -80,6 +80,10 @@ const objectSchema = {
         },
       ],
     },
+    {
+      type: "null",
+      name: "deleted_at",
+    },
   ],
 };
 

@@ -7,7 +7,7 @@ export default function compile(schema) {
   };
   const type = schema.type.replace(" ", "_");
 
-  const code = generator[type](schema, ctx, "/");
+  const code = generator[type](schema, "/", ctx);
   let output = generator.topLevelVarDec(ctx.globals);
   output += code;
   output += generator.returnErrors();
