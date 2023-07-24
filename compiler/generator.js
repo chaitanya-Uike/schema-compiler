@@ -84,6 +84,7 @@ const generator = {
     const itemSchema = schema.items;
     const childDataVar = this.id(this.DATA, level + 1);
     const alternative = [];
+    const validations = schema.validations || [];
 
     if (itemSchema) {
       const type = itemSchema.type.replace(" ", "_");
@@ -110,6 +111,42 @@ const generator = {
           ]
         )
       );
+    }
+
+    if (validations.length) {
+      if (!itemSchema) {
+        alternative.push(
+          t.varDeclaration(op.LET, [
+            t.varDeclarator(this.LENGTH, t.memberExpression(dataVar, "length")),
+          ])
+        );
+      }
+
+      const LENGTH_CHECKS = {
+        min: { op: op.LESS_THAN, msg: "minimum length should be " },
+        max: { op: op.GREATER_THAN, msg: "maximum length should be " },
+        length: { op: op.NOT_EQUAL, msg: "length should be " },
+      };
+
+      let name, value, error;
+      for (let i = 0, l = validations.length; i < l; ++i) {
+        ({ name, value, message: error } = validations[i]);
+        value = parseInt(value, 10);
+        const check = LENGTH_CHECKS[name];
+        error = error || check.msg + value;
+        if (check) {
+          alternative.push(
+            t.ifStatement(
+              t.binaryExpression(
+                t.memberExpression(dataVar, "length"),
+                check.op,
+                value
+              ),
+              [this.pushErrorExpression(t.stringLiteral(error), path)]
+            )
+          );
+        }
+      }
     }
 
     const output = t.ifStatement(
@@ -184,7 +221,7 @@ const generator = {
           );
           lengthAsg = true;
         }
-        value = parseInt(value);
+        value = parseInt(value, 10);
         error = error || check.msg + value;
         tests.push(
           t.ifStatement(t.binaryExpression(this.LENGTH, check.op, value), [

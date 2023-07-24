@@ -1,9 +1,8 @@
 import compile from "./compiler";
-import * as t from "./compiler/templates";
 
-const code = compile({
+const userSchema = {
   type: "object",
-  validations: [],
+  name: "user_test",
   properties: [
     {
       type: "string",
@@ -72,6 +71,7 @@ const code = compile({
     {
       type: "number",
       name: "age",
+      required: false,
       validations: [
         {
           name: "gte",
@@ -83,10 +83,12 @@ const code = compile({
     {
       type: "array",
       name: "numbers",
+      required: false,
       validations: [],
       items: {
         type: "number",
         name: "num",
+        required: false,
         validations: [
           {
             name: "gte",
@@ -96,13 +98,21 @@ const code = compile({
       },
     },
   ],
-  schema_ref: [],
-});
+};
 
-const validator = new Function("d", code);
+const arraySchema = {
+  type: "array",
+  items: {
+    type: "number",
+    validations: [{ name: "gte", value: 10 }],
+  },
+  validations: [
+    { name: "min", value: "3" },
+    { name: "max", value: 5 },
+  ],
+};
 
-console.time("validate");
-const errors = validator({
+const data1 = {
   email: "test@email.com",
   password: "Pass@1234",
   address: {
@@ -110,9 +120,13 @@ const errors = validator({
     country: "India",
   },
   age: 18,
-  numbers: [12, 90, 18],
-});
-console.timeEnd("validate");
+  numbers: [12, 90, 18, 1],
+};
+
+const code = compile(arraySchema);
+const validator = new Function("d", code);
+
+const errors = validator([10, 9, 17]);
 
 console.log(errors);
 console.log(code);
