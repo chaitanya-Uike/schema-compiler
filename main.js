@@ -1,4 +1,5 @@
 import compile from "./compiler";
+import * as t from "./compiler/templates";
 
 const code = compile({
   type: "object",

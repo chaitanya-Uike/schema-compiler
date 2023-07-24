@@ -27,7 +27,7 @@ const generator = {
         t.varAssignment(
           childDataVar,
           op.ASSIGN,
-          t.memberExpression(dataVar, t.stringLiteral(name), true)
+          t.memberExpression(dataVar, name)
         ),
         this[type](property, childPath, ctx),
       ];
@@ -36,7 +36,7 @@ const generator = {
         propTests.push(
           t.ifStatement(
             t.binaryExpression(
-              t.memberExpression(dataVar, t.stringLiteral(name), true),
+              t.memberExpression(dataVar, name),
               op.EQUAL,
               "undefined"
             ),
@@ -53,7 +53,7 @@ const generator = {
         propTests.push(
           t.ifStatement(
             t.binaryExpression(
-              t.memberExpression(dataVar, t.stringLiteral(name), true),
+              t.memberExpression(dataVar, name),
               op.NOT_EQUAL,
               "undefined"
             ),

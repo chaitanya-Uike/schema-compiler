@@ -81,7 +81,31 @@ function callExpression(callee, args) {
 }
 
 function memberExpression(object, property, computed = false) {
-  return computed ? `${object}[${property}]` : `${object}.${property}`;
+  if (computed) return `${object}[${property}]`;
+  let i = 0,
+    char = property[i];
+  if (
+    (char >= "a" && char <= "z") ||
+    (char >= "A" && char <= "Z") ||
+    char === "_" ||
+    char === "$"
+  ) {
+    char = property[i++];
+    while (
+      i < property.length &&
+      ((char >= "a" && char <= "z") ||
+        (char >= "A" && char <= "Z") ||
+        (char >= "0" && char <= "9") ||
+        char === "_" ||
+        char === "$")
+    ) {
+      char = property[i++];
+    }
+  }
+
+  return i === property.length
+    ? `${object}.${property}`
+    : `${object}["${property}"]`;
 }
 
 function templateLiteral(value) {
