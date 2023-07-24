@@ -136,14 +136,9 @@ const generator = {
         error = error || check.msg + value;
         if (check) {
           alternative.push(
-            t.ifStatement(
-              t.binaryExpression(
-                t.memberExpression(dataVar, "length"),
-                check.op,
-                value
-              ),
-              [this.pushErrorExpression(t.stringLiteral(error), path)]
-            )
+            t.ifStatement(t.binaryExpression(this.LENGTH, check.op, value), [
+              this.pushErrorExpression(t.stringLiteral(error), path),
+            ])
           );
         }
       }
@@ -460,6 +455,8 @@ const generator = {
 
     return this.addSemiColon(output);
   },
+
+  or: function (schema, path, ctx) {},
 
   pushErrorExpression(message, path) {
     return t.callExpression(t.memberExpression(this.ERRORS, "push"), [
