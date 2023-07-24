@@ -1,13 +1,13 @@
 import compile from "./compiler";
-import * as t from "./compiler/templates";
-import op from "./compiler/operators";
 
-const objectSchema = {
+const code = compile({
   type: "object",
+  validations: [],
   properties: [
     {
       type: "string",
       name: "email",
+      required: true,
       validations: [
         {
           name: "match",
@@ -15,11 +15,11 @@ const objectSchema = {
           message: "invalid email",
         },
       ],
-      required: true,
     },
     {
       type: "string",
       name: "password",
+      required: true,
       validations: [
         {
           name: "min",
@@ -27,7 +27,7 @@ const objectSchema = {
         },
         {
           name: "max",
-          value: "16",
+          value: "13",
         },
         {
           name: "match",
@@ -39,64 +39,77 @@ const objectSchema = {
       ],
     },
     {
-      type: "number",
-      name: "age",
-      validations: [
-        { name: "gte", value: 18, message: "age should be greater than 18" },
-      ],
-      required: true,
-    },
-    {
-      type: "boolean",
-      name: "subscribed",
-      validations: [{ name: "const", value: "true" }],
-      required: true,
-    },
-    {
       type: "object",
       name: "address",
+      required: true,
+      validations: [],
       properties: [
         {
           type: "string",
           name: "city",
+          required: true,
           validations: [
             {
               name: "enum",
-              value: ["Mumbai", "Pune"],
+              value: ["Pune", "Mumbai"],
             },
           ],
-          required: true,
         },
         {
           type: "string",
           name: "country",
+          required: true,
           validations: [
             {
               name: "const",
               value: "India",
             },
           ],
-          required: true,
         },
       ],
     },
     {
-      type: "null",
-      name: "deleted_at",
+      type: "number",
+      name: "age",
+      validations: [
+        {
+          name: "gte",
+          value: "18",
+          message: "age should be atleast 18",
+        },
+      ],
+    },
+    {
+      type: "array",
+      name: "numbers",
+      validations: [],
+      items: {
+        type: "number",
+        name: "num",
+        validations: [
+          {
+            name: "gte",
+            value: "10",
+          },
+        ],
+      },
     },
   ],
-};
+  schema_ref: [],
+});
 
-const code = compile(objectSchema);
 const validator = new Function("d", code);
 
 console.time("validate");
 const errors = validator({
   email: "test@email.com",
   password: "Pass@1234",
-  address: { city: "Pune", country: "India" },
+  address: {
+    city: "Pune",
+    country: "India",
+  },
   age: 18,
-  subscribed: false,
+  numbers: [12, 90, 18],
 });
 console.timeEnd("validate");
 

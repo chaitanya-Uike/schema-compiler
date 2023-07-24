@@ -78,6 +78,57 @@ const generator = {
     return this.addSemiColon(output);
   },
 
+  array: function (schema, path, ctx) {
+    const level = this.level(path);
+    const dataVar = this.id(this.DATA, level);
+    const itemSchema = schema.items;
+    const childDataVar = this.id(this.DATA, level + 1);
+    const alternative = [];
+
+    if (itemSchema) {
+      const type = itemSchema.type.replace(" ", "_");
+      // var declaration
+      alternative.push(
+        t.varDeclaration(op.LET, [
+          t.varDeclarator(this.LENGTH, t.memberExpression(dataVar, "length")),
+          t.varDeclarator(childDataVar),
+        ])
+      );
+      //for loop
+      alternative.push(
+        t.forStatement(
+          t.varDeclaration(op.LET, [t.varDeclarator("i", "0")]),
+          t.binaryExpression("i", op.LESS_THAN, this.LENGTH),
+          t.unaryExpression(op.INCREMENT, "i", false),
+          [
+            t.varAssignment(
+              childDataVar,
+              op.ASSIGN,
+              t.memberExpression(dataVar, "i", true)
+            ),
+            this[type](itemSchema, this.addToPath(path, "${i}"), ctx),
+          ]
+        )
+      );
+    }
+
+    const output = t.ifStatement(
+      t.unaryExpression(
+        op.NOT,
+        t.callExpression(t.memberExpression("Array", "isArray"), [dataVar])
+      ),
+      [
+        this.pushErrorExpression(
+          t.stringLiteral("expected type 'array'"),
+          path
+        ),
+      ],
+      alternative
+    );
+
+    return this.addSemiColon(output);
+  },
+
   string: function (schema, path, ctx) {
     const tests = [];
     const dataVar = this.id(this.DATA, this.level(path));
@@ -377,7 +428,7 @@ const generator = {
     return t.callExpression(t.memberExpression(this.ERRORS, "push"), [
       t.objectExpression([
         t.objectProperty("message", message),
-        t.objectProperty("path", t.stringLiteral(path)),
+        t.objectProperty("path", t.templateLiteral(path)),
       ]),
     ]);
   },
