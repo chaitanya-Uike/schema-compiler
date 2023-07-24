@@ -6,17 +6,86 @@ const generator = {
   ERRORS: "e",
   LENGTH: "l",
 
-  object: function (schema, state, path) {},
+  object: function (schema, ctx, path) {
+    const level = this.level(path);
+    const dataVar = this.id(this.DATA, level);
+    const properties = schema.properties;
+    let property, name, type, required, childPath;
 
-  string: function (schema, state, path) {
+    const childDataVar = this.id(this.DATA, level + 1);
+    const propTests = [
+      t.varDeclaration(op.LET, [t.varDeclarator(childDataVar)]),
+    ];
+
+    for (let i = 0, l = properties.length; i < l; ++i) {
+      property = properties[i];
+      ({ name, type, required } = property);
+      type = type.replace(" ", "_");
+      childPath = this.addToPath(path, name);
+
+      const propertyValLogic = [
+        t.varAssignment(
+          childDataVar,
+          op.ASSIGN,
+          t.memberExpression(dataVar, t.stringLiteral(name), true)
+        ),
+        this[type](property, ctx, childPath),
+      ];
+
+      if (required) {
+        propTests.push(
+          t.ifStatement(
+            t.binaryExpression(
+              t.memberExpression(dataVar, t.stringLiteral(name), true),
+              op.EQUAL,
+              "undefined"
+            ),
+            [
+              this.pushErrorExpression(
+                t.stringLiteral(`required field '${name}' is missing`),
+                childPath
+              ),
+            ],
+            propertyValLogic
+          )
+        );
+      } else {
+        propTests.push(
+          t.ifStatement(
+            t.binaryExpression(
+              t.memberExpression(dataVar, t.stringLiteral(name), true),
+              op.NOT_EQUAL,
+              "undefined"
+            ),
+            propertyValLogic
+          )
+        );
+      }
+    }
+
+    const typeCheck = `!${dataVar}||typeof ${dataVar}!=="object"||Array.isArray(${dataVar})`;
+    let output = t.ifStatement(
+      typeCheck,
+      [
+        this.pushErrorExpression(
+          t.stringLiteral("expected type 'object'"),
+          path
+        ),
+      ],
+      propTests
+    );
+
+    return this.addSemiColon(output);
+  },
+
+  string: function (schema, ctx, path) {
     const tests = [];
     const dataVar = this.id(this.DATA, this.level(path));
     const validations = schema.validations;
     let name,
       value,
       error,
-      lengthAsg = false,
-      patterns = 0;
+      lengthAsg = false;
 
     const LENGTH_CHECKS = {
       min: { op: op.LESS_THAN, msg: "minimum length should be " },
@@ -25,8 +94,8 @@ const generator = {
     };
 
     const addRegexTest = (regex, message) => {
-      const pattern = this.id("p", patterns++);
-      state.addGlobal(t.varDeclarator(pattern, regex));
+      const pattern = this.id("p", ctx.patterns++);
+      ctx.globals.push(t.varDeclarator(pattern, regex));
       tests.push(
         t.ifStatement(
           t.unaryExpression(
@@ -39,8 +108,13 @@ const generator = {
     };
 
     const reviveRegex = (regexString) => {
-      const m = regexString.match(/\/(.*)\/(.*)?/);
-      return new RegExp(m[1], m[2] || "");
+      try {
+        const m = regexString.match(/\/(.*)\/(.*)?/);
+        return new RegExp(m[1], m[2] || "");
+      } catch (error) {
+        console.error(error);
+        throw new Error("Error constructing regex");
+      }
     };
 
     for (let i = 0, l = validations.length; i < l; ++i) {
@@ -113,24 +187,23 @@ const generator = {
         );
       }
     }
-    state.write(
-      t.ifStatement(
-        t.binaryExpression(
-          t.unaryExpression(op.TYPE_OF, dataVar),
-          op.NOT_EQUAL,
-          t.stringLiteral("string")
+
+    const output = t.ifStatement(
+      t.binaryExpression(
+        t.unaryExpression(op.TYPE_OF, dataVar),
+        op.NOT_EQUAL,
+        t.stringLiteral("string")
+      ),
+      [
+        this.pushErrorExpression(
+          t.stringLiteral("expected type 'string'"),
+          path
         ),
-        [
-          this.pushErrorExpression(
-            t.templateLiteral(
-              `expected type "string" recieved "\${typeof ${dataVar}}"`
-            ),
-            path
-          ),
-        ],
-        tests
-      )
+      ],
+      tests
     );
+
+    return this.addSemiColon(output);
   },
 
   pushErrorExpression(message, path) {
@@ -143,25 +216,36 @@ const generator = {
   },
 
   id(id, count) {
-    return count ? id + count : id;
+    return count ? `${id}${count}` : id;
   },
 
   level(path) {
+    const l = path.length;
+    if (l === 1) return 0;
     let level = 0;
-    for (let i = path.length; i--; ) if (path[i] === "/") level++;
-    return level - 1;
+    for (let i = 0; i < l; ++i) if (path[i] === "/") level++;
+    return level;
   },
 
-  globals(state) {
-    return t.varDeclaration(op.LET, state.globals) + ";";
+  topLevelVarDec(globals) {
+    return t.varDeclaration(op.LET, globals) + ";";
   },
 
   errorsDec() {
     return t.varDeclarator(this.ERRORS, t.arrayExpression());
   },
 
-  returnStatement() {
+  returnErrors() {
     return t.returnStatement(this.ERRORS);
+  },
+
+  addToPath(path, value) {
+    if (path[path.length - 1] !== "/") path += "/";
+    return path + value;
+  },
+
+  addSemiColon(code) {
+    return code[code.length - 1] !== ";" ? code + ";" : code;
   },
 };
 

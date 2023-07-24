@@ -45,7 +45,7 @@ function stringLiteral(value) {
 }
 
 function blockStatement(body) {
-  let code = "";
+  let code = " ";
   let l = body.length;
   if (l > 1) code = "{";
   for (let i = 0; i < l; ++i) {

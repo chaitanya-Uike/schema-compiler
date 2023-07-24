@@ -1,16 +1,15 @@
 import generator from "./generator";
-import State from "./state";
 
 export default function compile(schema) {
-  const state = new State();
-
-  state.addGlobal(generator.errorsDec());
-
+  const ctx = {
+    globals: [generator.errorsDec()],
+    patterns: 0,
+  };
   const type = schema.type.replace(" ", "_");
-  generator[type](schema, state, "/");
 
-  let output = generator.globals(state);
-  output += state.output;
-  output += generator.returnStatement();
+  const code = generator[type](schema, ctx, "/");
+  let output = generator.topLevelVarDec(ctx.globals);
+  output += code;
+  output += generator.returnErrors();
   return output;
 }
