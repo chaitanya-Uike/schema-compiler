@@ -44,6 +44,13 @@ const objectSchema = {
       validations: [
         { name: "gte", value: 18, message: "age should be greater than 18" },
       ],
+      required: true,
+    },
+    {
+      type: "boolean",
+      name: "subscribed",
+      validations: [{ name: "const", value: "true" }],
+      required: true,
     },
     {
       type: "object",
@@ -84,7 +91,10 @@ const errors = validator({
   email: "test@email.com",
   password: "Pass@1234",
   address: { city: "Pune", country: "India" },
+  age: 18,
+  subscribed: false,
 });
 console.timeEnd("validate");
 
 console.log(errors);
+console.log(code);

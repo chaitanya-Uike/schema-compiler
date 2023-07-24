@@ -324,7 +324,44 @@ const generator = {
     return this.addSemiColon(output);
   },
 
-  boolean: function (schema, ctx, path) {},
+  boolean: function (schema, ctx, path) {
+    const tests = [];
+    const dataVar = this.id(this.DATA, this.level(path));
+    const validations = schema.validations;
+    let name, value, error;
+
+    for (let i = 0, l = validations.length; i < l; ++i) {
+      ({ name, value, message: error } = validations[i]);
+
+      if (name === "const") {
+        const test =
+          value === "true" ? t.unaryExpression(op.NOT, dataVar) : dataVar;
+        error = error
+          ? t.stringLiteral(error)
+          : t.templateLiteral(`value should be '${value}'`);
+        tests.push(
+          t.ifStatement(test, [this.pushErrorExpression(error, path)])
+        );
+      }
+    }
+
+    const output = t.ifStatement(
+      t.binaryExpression(
+        t.unaryExpression(op.TYPE_OF, dataVar),
+        op.NOT_EQUAL,
+        t.stringLiteral("boolean")
+      ),
+      [
+        this.pushErrorExpression(
+          t.stringLiteral("expected type 'boolean'"),
+          path
+        ),
+      ],
+      tests
+    );
+
+    return this.addSemiColon(output);
+  },
 
   pushErrorExpression(message, path) {
     return t.callExpression(t.memberExpression(this.ERRORS, "push"), [

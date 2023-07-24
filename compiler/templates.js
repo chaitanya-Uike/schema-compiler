@@ -63,10 +63,10 @@ function blockStatement(body) {
   return code;
 }
 
-function ifStatement(test, consequent, alternative) {
+function ifStatement(test, consequent, alternative = []) {
   let code = `if(${test})`;
   code += blockStatement(consequent);
-  if (alternative) code += `else${blockStatement(alternative)}`;
+  if (alternative.length) code += `else${blockStatement(alternative)}`;
   return code;
 }
 
