@@ -55,7 +55,11 @@ function blockStatement(body) {
       code += ";";
     }
   }
-  if (l > 1) code += "}";
+  if (l > 1) {
+    if (code[code.length - 1] === ";")
+      return code.slice(0, code.length - 1) + "}";
+    return code + "}";
+  }
   return code;
 }
 

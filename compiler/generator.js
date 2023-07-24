@@ -245,7 +245,8 @@ const generator = {
   },
 
   addSemiColon(code) {
-    return code[code.length - 1] !== ";" ? code + ";" : code;
+    let lastChar = code[code.length - 1];
+    return lastChar !== ";" && lastChar !== "}" ? code + ";" : code;
   },
 };
 

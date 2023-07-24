@@ -79,3 +79,5 @@ validator({
   address: { city: "Pune", country: "India" },
 });
 console.timeEnd("validate");
+
+console.log(code);
