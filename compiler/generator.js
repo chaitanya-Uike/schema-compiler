@@ -85,6 +85,7 @@ const generator = {
     let name,
       value,
       error,
+      check,
       lengthAsg = false;
 
     const LENGTH_CHECKS = {
@@ -119,8 +120,8 @@ const generator = {
 
     for (let i = 0, l = validations.length; i < l; ++i) {
       ({ name, value, message: error } = validations[i]);
-      const check = LENGTH_CHECKS[name];
-      if (check) {
+      if (LENGTH_CHECKS[name]) {
+        check = LENGTH_CHECKS[name];
         if (!lengthAsg) {
           tests.push(
             t.varDeclaration(op.LET, [
@@ -205,6 +206,125 @@ const generator = {
 
     return this.addSemiColon(output);
   },
+
+  number: function (schema, ctx, path) {
+    const tests = [];
+    const dataVar = this.id(this.DATA, this.level(path));
+    const validations = schema.validations;
+    let name, value, error, check;
+
+    const COMPARISON_CHECKS = {
+      gt: { op: op.LESS_THAN_EQUAL, msg: "value should be greater than " },
+      gte: {
+        op: op.LESS_THAN,
+        msg: "value should be greater than or equal to ",
+      },
+      lt: { op: op.GREATER_THAN_EQUAL, msg: "value should be less than " },
+      lte: {
+        op: op.GREATER_THAN,
+        msg: "value should be less than or equal to ",
+      },
+    };
+
+    const DOMAIN_CHECKS = {
+      positive: {
+        op: op.LESS_THAN_EQUAL,
+        msg: "positive ( > 0) value expected",
+      },
+      negative: {
+        op: op.GREATER_THAN_EQUAL,
+        msg: "negative (< 0) value expected",
+      },
+      "non-negative": {
+        op: op.LESS_THAN,
+        msg: "non-negative ( ≥ 0) value expected",
+      },
+      "non-positive": {
+        op: op.GREATER_THAN,
+        msg: "non-positive ( ≤ 0) value expected",
+      },
+    };
+
+    for (let i = 0, l = validations.length; i < l; ++i) {
+      ({ name, value, message: error } = validations[i]);
+
+      if (COMPARISON_CHECKS[name]) {
+        check = COMPARISON_CHECKS[name];
+        value = parseFloat(value);
+        error = error || check.msg + value;
+        tests.push(
+          t.ifStatement(t.binaryExpression(dataVar, check.op, value), [
+            this.pushErrorExpression(t.stringLiteral(error), path),
+          ])
+        );
+      } else if (DOMAIN_CHECKS[name] && value) {
+        check = DOMAIN_CHECKS[name];
+        error = error || check.msg;
+        tests.push(
+          t.ifStatement(t.binaryExpression(dataVar, check.op, 0), [
+            this.pushErrorExpression(t.stringLiteral(error), path),
+          ])
+        );
+      } else if (name === "integer" && value) {
+        tests.push(
+          t.ifStatement(
+            t.unaryExpression(
+              op.NOT,
+              t.callExpression(t.memberExpression("Number", "isInteger"), [
+                dataVar,
+              ])
+            ),
+            [
+              this.pushErrorExpression(
+                t.stringLiteral(error || "integer expected"),
+                path
+              ),
+            ]
+          )
+        );
+      } else if (name === "const") {
+        error = error || `value not equal to '${value}'`;
+        tests.push(
+          t.ifStatement(t.binaryExpression(dataVar, op.NOT_EQUAL, value), [
+            this.pushErrorExpression(t.stringLiteral(error), path),
+          ])
+        );
+      } else if (name === "enum") {
+        const len = value.length;
+        let argument = "(";
+        for (let i = 0; i < len; ++i) {
+          if (i > 0) argument += op.OR;
+          argument += t.binaryExpression(dataVar, op.EQUAL, value[i]);
+        }
+        argument += ")";
+        error = error || `value should be one of [${value.join(", ")}]`;
+        tests.push(
+          t.ifStatement(t.unaryExpression(op.NOT, argument), [
+            this.pushErrorExpression(t.stringLiteral(error), path),
+          ])
+        );
+      }
+    }
+
+    const output = t.ifStatement(
+      t.binaryExpression(
+        t.unaryExpression(op.TYPE_OF, dataVar),
+        op.NOT_EQUAL,
+        t.stringLiteral("number")
+      ),
+      [
+        this.pushErrorExpression(
+          t.stringLiteral("expected type 'number'"),
+          path
+        ),
+      ],
+      tests
+    );
+
+    return this.addSemiColon(output);
+  },
+
+  boolean: function (schema, ctx, path) {},
 
   pushErrorExpression(message, path) {
     return t.callExpression(t.memberExpression(this.ERRORS, "push"), [

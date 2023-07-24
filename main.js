@@ -39,6 +39,13 @@ const objectSchema = {
       ],
     },
     {
+      type: "number",
+      name: "age",
+      validations: [
+        { name: "gte", value: 18, message: "age should be greater than 18" },
+      ],
+    },
+    {
       type: "object",
       name: "address",
       properties: [
@@ -73,11 +80,11 @@ const code = compile(objectSchema);
 const validator = new Function("d", code);
 
 console.time("validate");
-validator({
+const errors = validator({
   email: "test@email.com",
   password: "Pass@1234",
   address: { city: "Pune", country: "India" },
 });
 console.timeEnd("validate");
 
-console.log(code);
+console.log(errors);
