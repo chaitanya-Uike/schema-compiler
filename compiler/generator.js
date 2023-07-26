@@ -461,15 +461,16 @@ const generator = {
     const errorVar = this.id("vErr", level);
     const prevErr = this.ERRORS;
     this.ERRORS = errorVar;
-    const ERROR_COUNT = "e";
+    const ERROR_COUNT = this.id("e", level);
 
-    let s, code;
-    let output = [
-      t.varDeclaration(op.LET, [
-        t.varDeclarator(this.ERRORS, t.arrayExpression()),
-        t.varDeclarator(ERROR_COUNT, "0"),
-      ]),
-    ];
+    let s,
+      code,
+      output = [
+        t.varDeclaration(op.LET, [
+          t.varDeclarator(this.ERRORS, t.arrayExpression()),
+          t.varDeclarator(ERROR_COUNT, "0"),
+        ]),
+      ];
     for (let i = 0, l = schemas.length; i < l; ++i) {
       s = schemas[i];
       code = this[s.type](s, path, ctx);
@@ -521,6 +522,50 @@ const generator = {
           t.callExpression(t.memberExpression(prevErr, "push"), ["error_"]),
         ]
       )
+    );
+    this.ERRORS = prevErr;
+
+    return this.join(output);
+  },
+
+  and: function (schema, path, ctx) {
+    const level = this.level(path);
+    const schemas = schema.schemas;
+    const errorVar = this.id("vErr", level);
+    const prevErr = this.ERRORS;
+    this.ERRORS = errorVar;
+    let s,
+      code,
+      output = [
+        t.varDeclaration(op.LET, [
+          t.varDeclarator(errorVar, t.arrayExpression()),
+        ]),
+      ];
+    for (let i = 0, l = schemas.length; i < l; ++i) {
+      s = schemas[i];
+      code = this[s.type](s, path, ctx);
+      output.push(code);
+    }
+    output.push(
+      t.ifStatement(t.memberExpression(this.ERRORS, "length"), [
+        t.varDeclaration(op.LET, [
+          t.varDeclarator(
+            "error_",
+            t.objectExpression([
+              t.objectProperty(
+                "message",
+                t.stringLiteral("all schema should be valid")
+              ),
+              t.objectProperty(
+                "path",
+                t.stringLiteral(this.addToPath(path, "and"))
+              ),
+              t.objectProperty("errors", this.ERRORS),
+            ])
+          ),
+        ]),
+        t.callExpression(t.memberExpression(prevErr, "push"), ["error_"]),
+      ])
     );
     this.ERRORS = prevErr;
 

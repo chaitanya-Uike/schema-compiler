@@ -144,35 +144,21 @@ const or = {
   ],
 };
 
-const code = compile(or);
+const and = {
+  type: "and",
+  schemas: [
+    { type: "string", validations: [{ name: "min", value: 3 }] },
+    { type: "string", validations: [{ name: "isNum", value: true }] },
+  ],
+};
+
+const code = compile(and);
 const validator = new Function("data", code);
 
-const errors = validator();
+const errors = validator("123");
 
 console.log(errors);
 console.log(code);
-
-function v(data) {
-  let errors = [];
-  let vErr = [],
-    e = 0;
-  if (typeof data !== "string")
-    vErr.push({ message: "expected type 'string'", path: `/` });
-  if (e !== vErr.length) {
-    e = vErr.length;
-    if (typeof data !== "number")
-      vErr.push({ message: "expected type 'number'", path: `/` });
-  }
-  if (e !== vErr.length) {
-    let error_ = {
-      message: "at least one schema should be valid",
-      path: "/or",
-      errors: vErr,
-    };
-    errors.push(error_);
-  }
-  return errors;
-}
 
 // import Ajv from "ajv";
 
