@@ -31,12 +31,12 @@ function binaryExpression(left, operator, right, parentisized = false) {
   return code;
 }
 
-function logicalExpression(left, operator, right, parentisized = false) {
+function logicalExpression(left, operator, right, parenthisized = false) {
   // TODO need to differentiate between logical and binary expression using operator type
   let code = "";
-  if (parentisized) code += "(";
+  if (parenthisized) code += "(";
   code += left + operator + right;
-  if (parentisized) code += ")";
+  if (parenthisized) code += ")";
   return code;
 }
 
@@ -44,18 +44,20 @@ function stringLiteral(value) {
   return `"${value}"`;
 }
 
-function blockStatement(body) {
+function blockStatement(body, parenthisized = false) {
   let code = " ";
-  let l = body.length;
-  if (l > 1) code = "{";
+  let l = body.length,
+    lastChar;
+  if (l > 1 || parenthisized) code = "{";
   for (let i = 0; i < l; ++i) {
     const statement = body[i];
     code += statement;
-    if (statement[statement.length - 1] !== ";") {
+    lastChar = statement[statement.length - 1];
+    if (lastChar !== ";" && lastChar !== "}") {
       code += ";";
     }
   }
-  if (l > 1) {
+  if (l > 1 || parenthisized) {
     if (code[code.length - 1] === ";")
       return code.slice(0, code.length - 1) + "}";
     return code + "}";

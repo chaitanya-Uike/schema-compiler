@@ -162,7 +162,9 @@ const generator = {
 
   string: function (schema, path, ctx) {
     const tests = [];
-    const dataVar = this.id(this.DATA, this.level(path));
+    const level = this.level(path);
+    const dataVar = this.id(this.DATA, level);
+    const lengthVar = this.id(this.LENGTH, level);
     const validations = schema.validations;
     let name,
       value,
@@ -207,10 +209,7 @@ const generator = {
         if (!lengthAsg) {
           tests.push(
             t.varDeclaration(op.LET, [
-              t.varDeclarator(
-                this.LENGTH,
-                t.memberExpression(dataVar, "length")
-              ),
+              t.varDeclarator(lengthVar, t.memberExpression(dataVar, "length")),
             ])
           );
           lengthAsg = true;
@@ -709,6 +708,59 @@ const generator = {
     );
     this.ERRORS = prevErr;
 
+    return this.join(output);
+  },
+
+  "if then else": function (schema, path, ctx) {
+    const level = this.level(path);
+    const errorVar = this.id("vErr", level);
+    const IF_VALID = this.id("valid", level);
+    const prevErr = this.ERRORS;
+    let output = [
+      t.varDeclaration(op.LET, [
+        t.varDeclarator(errorVar, t.arrayExpression()),
+      ]),
+    ];
+
+    // if schema
+    this.ERRORS = errorVar;
+    if (!schema.if || !(schema.then || schema.else)) {
+      this.ERRORS = prevErr;
+      return "";
+    }
+    output.push(this[schema.if.type](schema.if, path, ctx));
+    this.ERRORS = prevErr;
+
+    output.push(
+      t.varDeclaration(op.LET, [
+        t.varDeclarator(
+          IF_VALID,
+          t.binaryExpression(
+            t.memberExpression(errorVar, "length"),
+            op.EQUAL,
+            "0"
+          )
+        ),
+      ])
+    );
+
+    let thenCode, elseCode;
+    if (schema.then)
+      thenCode = "{" + this[schema.then.type](schema.then, path, ctx) + "}";
+    if (schema.else)
+      elseCode = "{" + this[schema.else.type](schema.else, path, ctx) + "}";
+
+    let test, consequent, alternative;
+    if (thenCode && elseCode) {
+      test = IF_VALID;
+      consequent = [thenCode];
+      alternative = [elseCode];
+    } else if (thenCode || elseCode) {
+      test = thenCode ? IF_VALID : t.unaryExpression(op.NOT, IF_VALID);
+      consequent = [thenCode || elseCode];
+    }
+
+    if (test) output.push(t.ifStatement(test, consequent, alternative));
     return this.join(output);
   },
 

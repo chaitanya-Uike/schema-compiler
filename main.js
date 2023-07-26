@@ -168,52 +168,26 @@ const xor = {
   ],
 };
 
-const code = compile(xor);
-const validator = new Function("data", code);
+const ifThenElse = {
+  type: "if then else",
+  if: { type: "string", validations: [] },
+  // then: { type: "string", validations: [{ name: "const", value: "hello" }] },
+  // else: { type: "number", validations: [{ name: "const", value: 100 }] },
+};
 
-const errors = validator(100);
+const code = compile(ifThenElse);
+// const validator = new Function("data", code);
 
-console.log(errors);
+// const errors = validator(100);
+
+// console.log(errors);
 console.log(code);
-
-// import Ajv from "ajv";
-
-// const ajv = new Ajv();
-
-// const v = ajv.compile({
-//   anyOf: [{ type: "number" }, { type: "string" }],
-// });
-
-// console.log(v);
 
 function x(data) {
   let errors = [];
-  let vErr = [],
-    e = 0,
-    v = 0;
+  let vErr = [];
   if (typeof data !== "string")
     vErr.push({ message: "expected type 'string'", path: `/` });
-  vErr.length === e && ++v;
-  e = vErr.length;
-  if (typeof data !== "number")
-    vErr.push({ message: "expected type 'number'", path: `/` });
-  else if (data < 10)
-    vErr.push({
-      message: "value should be greater than or equal to 10",
-      path: `/`,
-    });
-  vErr.length === e && ++v;
-  e = vErr.length;
-  if (v !== 1) {
-    let error_ = {
-      message:
-        v > 1
-          ? "only one schema should be valid"
-          : "one schema should be valid",
-      path: "/xor",
-      validSchema: v,
-    };
-    errors.push(error_);
-  }
+  let valid = vErr.length === 0;
   return errors;
 }
