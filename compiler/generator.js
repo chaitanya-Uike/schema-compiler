@@ -2,9 +2,9 @@ import * as t from "./templates";
 import op from "./operators";
 
 const generator = {
-  DATA: "d",
-  ERRORS: "e",
-  LENGTH: "l",
+  DATA: "data",
+  ERRORS: "errors",
+  LENGTH: "len",
 
   object: function (schema, path, ctx) {
     const level = this.level(path);
@@ -20,7 +20,6 @@ const generator = {
     for (let i = 0, l = properties.length; i < l; ++i) {
       property = properties[i];
       ({ name, type, required } = property);
-      type = type.replace(" ", "_");
       childPath = this.addToPath(path, name);
 
       const propertyValLogic = [
@@ -87,7 +86,7 @@ const generator = {
     const validations = schema.validations || [];
 
     if (itemSchema) {
-      const type = itemSchema.type.replace(" ", "_");
+      const type = itemSchema.type;
       // var declaration
       alternative.push(
         t.varDeclaration(op.LET, [
@@ -456,7 +455,88 @@ const generator = {
     return this.addSemiColon(output);
   },
 
-  or: function (schema, path, ctx) {},
+  or: function (schema, path, ctx) {
+    const level = this.level(path);
+    const schemas = schema.schemas;
+    const errorVar = this.id("vErr", level);
+    const prevErr = this.ERRORS;
+    this.ERRORS = errorVar;
+    const ERROR_COUNT = "e";
+
+    let s, code;
+    let output = [
+      t.varDeclaration(op.LET, [
+        t.varDeclarator(this.ERRORS, t.arrayExpression()),
+        t.varDeclarator(ERROR_COUNT, "0"),
+      ]),
+    ];
+    for (let i = 0, l = schemas.length; i < l; ++i) {
+      s = schemas[i];
+      code = this[s.type](s, path, ctx);
+      if (i === 0) output.push(code);
+      else {
+        output.push(
+          t.ifStatement(
+            t.binaryExpression(
+              ERROR_COUNT,
+              op.NOT_EQUAL,
+              t.memberExpression(this.ERRORS, "length")
+            ),
+            [
+              t.varAssignment(
+                ERROR_COUNT,
+                op.ASSIGN,
+                t.memberExpression(this.ERRORS, "length")
+              ),
+              code,
+            ]
+          )
+        );
+      }
+    }
+    output.push(
+      t.ifStatement(
+        t.binaryExpression(
+          ERROR_COUNT,
+          op.NOT_EQUAL,
+          t.memberExpression(this.ERRORS, "length")
+        ),
+        [
+          t.varDeclaration(op.LET, [
+            t.varDeclarator(
+              "error_",
+              t.objectExpression([
+                t.objectProperty(
+                  "message",
+                  t.stringLiteral("at least one schema should be valid")
+                ),
+                t.objectProperty(
+                  "path",
+                  t.stringLiteral(this.addToPath(path, "or"))
+                ),
+                t.objectProperty("errors", this.ERRORS),
+              ])
+            ),
+          ]),
+          t.callExpression(t.memberExpression(prevErr, "push"), ["error_"]),
+        ]
+      )
+    );
+    this.ERRORS = prevErr;
+
+    return this.join(output);
+  },
+
+  join(statements) {
+    let output = "";
+    for (let i = 0, l = statements.length; i < l; ++i) {
+      const statement = statements[i];
+      output += statement;
+      let lastChar = statement[statement.length - 1];
+      if (lastChar !== ";" && lastChar !== "}") output += ";";
+    }
+    return output;
+  },
 
   pushErrorExpression(message, path) {
     return t.callExpression(t.memberExpression(this.ERRORS, "push"), [
