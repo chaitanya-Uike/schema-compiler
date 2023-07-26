@@ -152,10 +152,18 @@ const and = {
   ],
 };
 
-const code = compile(and);
+const not = {
+  type: "not",
+  schemas: [
+    { type: "string", validations: [] },
+    { type: "number", validations: [] },
+  ],
+};
+
+const code = compile(not);
 const validator = new Function("data", code);
 
-const errors = validator("123");
+const errors = validator(false);
 
 console.log(errors);
 console.log(code);

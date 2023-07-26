@@ -572,6 +572,76 @@ const generator = {
     return this.join(output);
   },
 
+  not: function (schema, path, ctx) {
+    const level = this.level(path);
+    const schemas = schema.schemas;
+    const errorVar = this.id("vErr", level);
+    const prevErr = this.ERRORS;
+    this.ERRORS = errorVar;
+    const ERROR_COUNT = this.id("e", level);
+    const VALID_COUNT = this.id("v", level);
+
+    let s,
+      code,
+      output = [
+        t.varDeclaration(op.LET, [
+          t.varDeclarator(this.ERRORS, t.arrayExpression()),
+          t.varDeclarator(ERROR_COUNT, "0"),
+          t.varDeclarator(VALID_COUNT, "0"),
+        ]),
+      ];
+
+    for (let i = 0, l = schemas.length; i < l; ++i) {
+      s = schemas[i];
+      code = this[s.type](s, path, ctx);
+      if (i > 0) {
+        output.push(
+          t.logicalExpression(
+            t.binaryExpression(
+              t.memberExpression(this.ERRORS, "length"),
+              op.EQUAL,
+              ERROR_COUNT
+            ),
+            op.AND,
+            t.unaryExpression(op.INCREMENT, VALID_COUNT)
+          )
+        );
+        output.push(
+          t.varAssignment(
+            ERROR_COUNT,
+            op.ASSIGN,
+            t.memberExpression(this.ERRORS, "length")
+          )
+        );
+      }
+      output.push(code);
+    }
+    output.push(
+      t.ifStatement(VALID_COUNT, [
+        t.varDeclaration(op.LET, [
+          t.varDeclarator(
+            "error_",
+            t.objectExpression([
+              t.objectProperty(
+                "message",
+                t.stringLiteral("no schema should be valid")
+              ),
+              t.objectProperty(
+                "path",
+                t.stringLiteral(this.addToPath(path, "not"))
+              ),
+              t.objectProperty("validSchema", VALID_COUNT),
+            ])
+          ),
+        ]),
+        t.callExpression(t.memberExpression(prevErr, "push"), ["error_"]),
+      ])
+    );
+    this.ERRORS = prevErr;
+
+    return this.join(output);
+  },
+
   join(statements) {
     let output = "";
     for (let i = 0, l = statements.length; i < l; ++i) {
