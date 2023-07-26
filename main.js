@@ -160,10 +160,18 @@ const not = {
   ],
 };
 
-const code = compile(not);
+const xor = {
+  type: "xor",
+  schemas: [
+    { type: "string", validations: [] },
+    { type: "number", validations: [{ name: "gte", value: 10 }] },
+  ],
+};
+
+const code = compile(xor);
 const validator = new Function("data", code);
 
-const errors = validator(false);
+const errors = validator(100);
 
 console.log(errors);
 console.log(code);
@@ -177,3 +185,35 @@ console.log(code);
 // });
 
 // console.log(v);
+
+function x(data) {
+  let errors = [];
+  let vErr = [],
+    e = 0,
+    v = 0;
+  if (typeof data !== "string")
+    vErr.push({ message: "expected type 'string'", path: `/` });
+  vErr.length === e && ++v;
+  e = vErr.length;
+  if (typeof data !== "number")
+    vErr.push({ message: "expected type 'number'", path: `/` });
+  else if (data < 10)
+    vErr.push({
+      message: "value should be greater than or equal to 10",
+      path: `/`,
+    });
+  vErr.length === e && ++v;
+  e = vErr.length;
+  if (v !== 1) {
+    let error_ = {
+      message:
+        v > 1
+          ? "only one schema should be valid"
+          : "one schema should be valid",
+      path: "/xor",
+      validSchema: v,
+    };
+    errors.push(error_);
+  }
+  return errors;
+}

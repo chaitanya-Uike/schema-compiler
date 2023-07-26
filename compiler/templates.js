@@ -151,6 +151,10 @@ function objectProperty(key, value) {
   return `${key}:${value}`;
 }
 
+function ternaryExpression(test, consequent, alternative) {
+  return `${test}?${consequent}:${alternative}`;
+}
+
 export {
   varDeclarator,
   varDeclaration,
@@ -169,4 +173,5 @@ export {
   arrayExpression,
   objectExpression,
   objectProperty,
+  ternaryExpression,
 };
