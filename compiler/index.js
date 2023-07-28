@@ -7,8 +7,9 @@ export default function compile(schema) {
   };
 
   const code = generator[schema.type](schema, "/", ctx);
-  let output = generator.topLevelVarDec(ctx.globals);
+  let output = `function validate(${generator.DATA}){`;
+  output += generator.topLevelVarDec(ctx.globals);
   output += code;
   output += generator.returnErrors();
-  return output;
+  return output + "}";
 }

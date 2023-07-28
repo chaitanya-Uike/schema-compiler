@@ -53,7 +53,7 @@ function blockStatement(body, parenthisized = false) {
     const statement = body[i];
     code += statement;
     lastChar = statement[statement.length - 1];
-    if (lastChar !== ";" && lastChar !== "}") {
+    if (lastChar !== ";") {
       code += ";";
     }
   }

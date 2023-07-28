@@ -217,7 +217,7 @@ const generator = {
         value = parseInt(value, 10);
         error = error || check.msg + value;
         tests.push(
-          t.ifStatement(t.binaryExpression(this.LENGTH, check.op, value), [
+          t.ifStatement(t.binaryExpression(lengthVar, check.op, value), [
             this.pushErrorExpression(t.stringLiteral(error), path),
           ])
         );
@@ -762,6 +762,14 @@ const generator = {
 
     if (test) output.push(t.ifStatement(test, consequent, alternative));
     return this.join(output);
+  },
+
+  schema_ref: function () {
+    throw new Error("schema_ref is currently not supported");
+  },
+
+  self_ref: function () {
+    throw new Error("self_ref is currently not supported");
   },
 
   join(statements) {
